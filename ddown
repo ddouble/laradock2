@@ -1,8 +1,8 @@
 #!/bin/bash
 # cd /var/workspace/laradock
 if [ -z $1 ]; then
-	docker-compose down
+	docker compose down
 else
-	docker-compose stop $1
-	docker-compose rm $1
+	docker compose stop $1
+	docker compose rm $1
 fi

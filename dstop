@@ -1,7 +1,7 @@
 #!/bin/bash
 # cd /var/workspace/laradock
 if [ -z $1 ]; then
-    docker-compose stop php-fpm workspace
+    docker compose stop php-fpm workspace
 else
-    docker-compose stop $1
+    docker compose stop $1
 fi
