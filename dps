@@ -1,0 +1,3 @@
+#! /bin/bash
+#cd /var/workspace/laradock
+docker-compose ps

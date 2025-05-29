@@ -1,0 +1,11 @@
+#!/bin/bash
+# cd /var/workspace/laradock
+if [ -z $1 ]; then
+# docker-compose up -d nginx mysql redis memcached workspace
+#	docker-compose up -d nginx php-fpm mysql redis memcached
+#	docker-compose up -d nginx php-fpm-7.4 mysql redis memcached
+#	docker-compose up -d nginx php-fpm-7.1 mysql redis memcached
+  docker-compose up -d php-fpm workspace
+else
+	docker-compose up -d $1
+fi

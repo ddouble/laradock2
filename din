@@ -1,0 +1,3 @@
+#! /bin/bash
+CONTAINER_NAME=${1:-workspace}
+docker-compose exec "$CONTAINER_NAME" bash

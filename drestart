@@ -1,0 +1,7 @@
+#! /bin/bash
+# cd /var/workspace/laradock
+if [ -z $1 ]; then
+	docker-compose restart php-fpm workspace
+else
+	docker-compose restart $1
+fi
