@@ -1,0 +1,11 @@
+#!/bin/bash
+# cd /var/workspace/laradock
+if [ -z $1 ]; then
+  # show help
+  echo "sh dbuild image-name"
+else
+  docker compose build --no-cache --progress=plain $1
+fi
+
+
+
