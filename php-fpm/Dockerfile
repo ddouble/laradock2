@@ -26,10 +26,15 @@ ENV DEBIAN_FRONTEND noninteractive
 # If you're in China, or you need to change sources, will be set CHANGE_SOURCE to true in .env.
 
 ARG CHANGE_SOURCE=false
-#RUN if [ ${LARADOCK_PHP_VERSION} = "7.1" ]; then \
+
+COPY ./apt-sources-php7.1.list /tmp/config-files/apt-sources-php7.1.list
+RUN if [ ${LARADOCK_PHP_VERSION} = "7.1" ]; then \
 #    sed -i 's/stable\/updates/stable-security\/updates/' /etc/apt/sources.list \
-#;fi
-COPY ./apt-sources-php${LARADOCK_PHP_VERSION}.list /etc/apt/sources.list
+    mv /tmp/config-files/apt-sources-php7.1.list /etc/apt/sources.list \
+;fi
+
+RUN rm -rf /tmp/config-files
+
 RUN cat /etc/apt/sources.list
 
 RUN if [ ${CHANGE_SOURCE} = true ]; then \
