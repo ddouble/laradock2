@@ -320,6 +320,8 @@ services:
         - docker-in-docker:/certs/client
       expose:
         - "9000"
+      ports:
+        - "${PHP_FPM_PORT}:9000"
       extra_hosts:
         - "dockerhost:${DOCKER_HOST_IP}"
       environment:
