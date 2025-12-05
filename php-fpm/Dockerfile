@@ -35,7 +35,9 @@ RUN if [ ${LARADOCK_PHP_VERSION} = "7.1" ]; then \
 
 RUN rm -rf /tmp/config-files
 
-RUN cat /etc/apt/sources.list
+RUN if [[ -e /etc/apt/sources.list ]]; then \
+    cat /etc/apt/sources.list \
+;fi
 
 RUN if [ ${CHANGE_SOURCE} = true ]; then \
     # Change application source from deb.debian.org to aliyun source
