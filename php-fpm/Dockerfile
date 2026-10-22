@@ -11,10 +11,50 @@
 #
 # Note: Base Image name format {image-tag}-{php-version}
 #
+# Set BASE_IMAGE_SOURCE=official to build the same base from the official
+# php:{php-version}-fpm image instead, so the latest PHP patch release is used
+# (requires PHP >= 7.4). Rebuild with `docker compose build --pull php-fpm`.
+#
 
 ARG LARADOCK_PHP_VERSION
 ARG BASE_IMAGE_TAG_PREFIX=latest
-FROM laradock/php-fpm:${BASE_IMAGE_TAG_PREFIX}-${LARADOCK_PHP_VERSION}
+ARG BASE_IMAGE_SOURCE=laradock
+
+FROM laradock/php-fpm:${BASE_IMAGE_TAG_PREFIX}-${LARADOCK_PHP_VERSION} AS base-laradock
+
+# Mirrors https://github.com/laradock/php-fpm/blob/master/Dockerfile-8.4
+FROM php:${LARADOCK_PHP_VERSION}-fpm AS base-official
+ENV DEBIAN_FRONTEND=noninteractive
+RUN set -eux; \
+    apt-get update; \
+    apt-get upgrade -y; \
+    apt-get install -y --no-install-recommends \
+            curl \
+            libmemcached-dev \
+            libz-dev \
+            libpq-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libfreetype6-dev \
+            libssl-dev \
+            libwebp-dev \
+            libxpm-dev \
+            libmcrypt-dev \
+            libonig-dev; \
+    rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    docker-php-ext-install pdo_mysql; \
+    docker-php-ext-install pdo_pgsql; \
+    docker-php-ext-configure gd \
+            --prefix=/usr \
+            --with-jpeg \
+            --with-webp \
+            --with-xpm \
+            --with-freetype; \
+    docker-php-ext-install gd; \
+    php -r 'var_dump(gd_info());'
+
+FROM base-${BASE_IMAGE_SOURCE}
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
 
