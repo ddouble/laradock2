@@ -1,0 +1,91 @@
+#!/bin/bash
+# Manage the laradock containers of one php version.
+#
+# Usage: dock [php-version] <command> [service...]
+#   php-version  e.g. 8.3 uses .env.php83, omitted uses .env
+#                (may also come right after the command: dock up 8.3)
+#   command      up|start, stop, down, restart, build, ps, in,
+#                or any other docker compose command (logs, exec, ...)
+#   service      up/start, stop and restart default to "php-fpm workspace",
+#                in defaults to "workspace"
+#
+# Examples:
+#   dock up                  # php-fpm + workspace of .env
+#   dock 8.3 up php-fpm      # php-fpm of .env.php83
+#   dock 8.3 build php-fpm
+#   dock 7.1 in workspace
+#   dock 8.3 logs -f php-fpm
+
+cd "$(dirname "$0")" || exit 1
+
+COMPOSE=(docker compose)
+VERSION=
+
+is_version() {
+  [[ $1 =~ ^[0-9]+\.[0-9]+$ ]]
+}
+
+use_version() {
+  local env_file=".env.php${1//./}"
+  if [ ! -f "$env_file" ]; then
+    if grep -qx "PHP_VERSION=$1" .env; then
+      env_file=.env
+    else
+      echo "No env file for php $1 ($env_file)" >&2
+      exit 1
+    fi
+  fi
+  VERSION=$1
+  COMPOSE+=(--env-file "$env_file")
+}
+
+usage() {
+  sed -n '2,/^$/s/^# \{0,1\}//p' "$0"
+}
+
+if is_version "$1"; then
+  use_version "$1"
+  shift
+fi
+
+CMD=$1
+shift
+if [ -z "$VERSION" ] && is_version "$1"; then
+  use_version "$1"
+  shift
+fi
+
+case "$CMD" in
+  up|start)
+    [ $# -eq 0 ] && set -- php-fpm workspace
+    "${COMPOSE[@]}" up -d "$@"
+    ;;
+  stop|restart)
+    [ $# -eq 0 ] && set -- php-fpm workspace
+    "${COMPOSE[@]}" "$CMD" "$@"
+    ;;
+  down)
+    if [ $# -eq 0 ]; then
+      "${COMPOSE[@]}" down
+    else
+      "${COMPOSE[@]}" stop "$@"
+      "${COMPOSE[@]}" rm "$@"
+    fi
+    ;;
+  build)
+    if [ $# -eq 0 ]; then
+      echo "Usage: dock [php-version] build <service...>" >&2
+      exit 1
+    fi
+    "${COMPOSE[@]}" build --pull --no-cache --progress=plain "$@"
+    ;;
+  in)
+    "${COMPOSE[@]}" exec "${1:-workspace}" bash
+    ;;
+  ""|-h|--help|help)
+    usage
+    ;;
+  *)
+    "${COMPOSE[@]}" "$CMD" "$@"
+    ;;
+esac
