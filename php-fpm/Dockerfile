@@ -67,10 +67,11 @@ ENV DEBIAN_FRONTEND noninteractive
 
 ARG CHANGE_SOURCE=false
 
-COPY ./apt-sources-php7.1.list /tmp/config-files/apt-sources-php7.1.list
-RUN if [ ${LARADOCK_PHP_VERSION} = "7.1" ]; then \
-#    sed -i 's/stable\/updates/stable-security\/updates/' /etc/apt/sources.list \
-    mv /tmp/config-files/apt-sources-php7.1.list /etc/apt/sources.list \
+# Use apt-sources-php{php-version}.list as apt sources when it exists,
+# e.g. for base images on Debian releases moved to archive.debian.org
+COPY ./apt-sources-php*.list /tmp/config-files/
+RUN if [ -e /tmp/config-files/apt-sources-php${LARADOCK_PHP_VERSION}.list ]; then \
+    mv /tmp/config-files/apt-sources-php${LARADOCK_PHP_VERSION}.list /etc/apt/sources.list \
 ;fi
 
 RUN rm -rf /tmp/config-files
@@ -1434,6 +1435,42 @@ RUN if [ ${INSTALL_DNSUTILS} = true ]; then \
 ###########################################################################
 
 RUN set -xe; php -v | grep -q "PHP ${LARADOCK_PHP_VERSION}."
+
+###########################################################################
+# Extra extensions:
+###########################################################################
+
+USER root
+
+# Space separated lists, e.g. EXTRA_EXTENSIONS="shmop sockets sysvsem"
+# (bundled extensions, installed with docker-php-ext-install) and
+# EXTRA_PECL_EXTENSIONS="igbinary msgpack" (installed with pecl).
+ARG EXTRA_EXTENSIONS=
+ARG EXTRA_PECL_EXTENSIONS=
+
+RUN set -eux; \
+  if [ -n "${EXTRA_EXTENSIONS}" ]; then \
+    case " ${EXTRA_EXTENSIONS} " in *" ffi "*) \
+      apt-get update -yqq && apt-get install -yqq libffi-dev ;; \
+    esac; \
+    docker-php-ext-install ${EXTRA_EXTENSIONS}; \
+  fi; \
+  for ext in ${EXTRA_PECL_EXTENSIONS}; do \
+    echo '' | pecl -q install ${ext}; \
+    docker-php-ext-enable ${ext%%-*}; \
+  done
+
+###########################################################################
+# APC compatibility layer for APCu (PHP 7):
+###########################################################################
+
+ARG INSTALL_APCU_BC=false
+
+RUN if [ ${INSTALL_APCU_BC} = true ]; then \
+    pecl install apcu_bc-1.0.5 && \
+    # Must load after apcu, so it can't use docker-php-ext-enable
+    echo "extension=apc.so" > /usr/local/etc/php/conf.d/zz-apcu_bc.ini \
+;fi
 
 #
 #--------------------------------------------------------------------------
